@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Nexus - Student Network</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            background-color: #000;
+            color: #fff;
+            user-select: none;
+        }
+        canvas {
+            display: block;
+        }
+        #ui-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 300px;
+            max-height: calc(100vh - 40px);
+            background: rgba(10, 10, 20, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+            color: #00ffff;
+            z-index: 100;
+            user-select: none;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform: translateX(calc(100% + 20px));
+            overflow-y: auto;
+        }
+        #ui-container.active {
+            transform: translateX(0);
+        }
+        #ui-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 101;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+        }
+        #ui-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+        }
+        #ui-toggle.active {
+            transform: rotate(90deg);
+        }
+        .ui-header {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(0, 255, 255, 0.4);
+            padding-bottom: 10px;
+            text-shadow: 0 0 5px #00ffff;
+        }
+        .ui-section {
+            margin-bottom: 20px;
+        }
+        .ui-label {
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: block;
+            color: #fff;
+            text-shadow: 0 0 3px #fff;
+        }
+        .ui-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 5px;
+            background: rgba(0, 255, 255, 0.3);
+            outline: none;
+            border-radius: 3px;
+            transition: background 0.3s;
+        }
+        .ui-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #00ffff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00ffff;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+        .ui-slider::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 15px #00ffff, 0 0 25px #00ffff;
+        }
+        .ui-button {
+            background: rgba(0, 255, 255, 0.2);
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+        }
+        .ui-button:hover {
+            background: rgba(0, 255, 255, 0.4);
+            box-shadow: 0 0 15px #00ffff;
+        }
+        .ui-button.active {
+            background: #00ffff;
+            color: #000;
+            border-color: #00ffff;
+            box-shadow: 0 0 20px #00ffff;
+        }
+        .ui-checkbox {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+            float: right;
+        }
+        .ui-checkbox:before {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 2px;
+            width: 16px;
+            height: 16px;
+            background: #aaa;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .ui-checkbox.checked {
+            background: rgba(0, 255, 255, 0.3);
+        }
+        .ui-checkbox.checked:before {
+            transform: translateX(20px);
+            background: #00ffff;
+        }
+        .ui-color-picker {
+            -webkit-appearance: none;
+            appearance: none;
+            border: none;
+            width: 30px;
+            height: 30px;
+            padding: 0;
+            background: none;
+            cursor: pointer;
+        }
+        .ui-color-picker::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        .ui-color-picker::-webkit-color-swatch {
+            border: 2px solid #fff;
+            border-radius: 50%;
+        }
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #000 0%, #0a0a1a 50%, #000 100%);
+            z-index: 999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: #00ffff;
+            font-size: 2rem;
+            text-shadow: 0 0 10px #00ffff;
+            animation: fadeIn 1s;
+        }
+        
+        #welcome-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 998;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 1s ease-in-out;
+        }
+        
+        #welcome-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .welcome-container {
+            text-align: center;
+            max-width: 800px;
+            padding: 40px;
+            background: linear-gradient(135deg, rgba(0, 255, 255, 0.1) 0%, rgba(0, 100, 255, 0.1) 100%);
+            border-radius: 20px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 50px rgba(0, 255, 255, 0.2), inset 0 0 50px rgba(0, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            animation: welcomeGlow 3s ease-in-out infinite alternate;
+        }
+        
+        .welcome-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #00ffff;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+            animation: titlePulse 2s ease-in-out infinite alternate;
+        }
+        
+        .welcome-subtitle {
+            font-size: 1.8rem;
+            color: #88ccff;
+            margin-bottom: 30px;
+            text-shadow: 0 0 10px #88ccff;
+            opacity: 0;
+            animation: subtitleFadeIn 2s ease-in-out 0.5s forwards;
+        }
+        
+        .welcome-message {
+            font-size: 1.4rem;
+            color: #ffffff;
+            margin-bottom: 40px;
+            text-shadow: 0 0 5px #ffffff;
+            opacity: 0;
+            animation: messageFadeIn 2s ease-in-out 1s forwards;
+            line-height: 1.6;
+        }
+        
+        .network-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            opacity: 0;
+            animation: statsFadeIn 2s ease-in-out 1.5s forwards;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            min-width: 120px;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            color: #88ccff;
+            text-shadow: 0 0 5px #88ccff;
+        }
+        
+        .welcome-button {
+            background: linear-gradient(135deg, #00ffff 0%, #0088ff 100%);
+            border: none;
+            color: #000;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            opacity: 0;
+            animation: buttonFadeIn 2s ease-in-out 2s forwards;
+        }
+        
+        .welcome-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.8);
+            background: linear-gradient(135deg, #00ffff 0%, #00aaff 100%);
+        }
+        
+        .neural-decoration {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        
+        .neural-line {
+            position: absolute;
+            height: 2px;
+            background: linear-gradient(90deg, transparent 0%, #00ffff 50%, transparent 100%);
+            opacity: 0.3;
+            animation: neuralFlow 4s linear infinite;
+        }
+        
+        .neural-node {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #00ffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00ffff;
+            animation: nodeFloat 3s ease-in-out infinite alternate;
+        }
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #00ffff;
+            border-top: 4px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: #00ffff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            transform: translate(-50%, -110%);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+        }
+        .student-label {
+            position: absolute;
+            color: #00ffff;
+            font-size: 12px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00ffff;
+            pointer-events: none;
+            opacity: 0.8;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes welcomeGlow {
+            0% { box-shadow: 0 0 50px rgba(0, 255, 255, 0.2), inset 0 0 50px rgba(0, 255, 255, 0.05); }
+            100% { box-shadow: 0 0 80px rgba(0, 255, 255, 0.4), inset 0 0 80px rgba(0, 255, 255, 0.1); }
+        }
+        @keyframes titlePulse {
+            0% { transform: scale(1); text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff; }
+            100% { transform: scale(1.05); text-shadow: 0 0 30px #00ffff, 0 0 60px #00ffff, 0 0 80px #00ffff; }
+        }
+        @keyframes subtitleFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes messageFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes statsFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes buttonFadeIn {
+            from { opacity: 0; transform: translateY(20px) scale(0.8); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes neuralFlow {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100vw); }
+        }
+        @keyframes nodeFloat {
+            0% { transform: translateY(0px) scale(1); opacity: 0.7; }
+            100% { transform: translateY(-10px) scale(1.2); opacity: 1; }
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="loader"></div>
+        <p>Initializing Student Network...</p>
+        <p style="font-size: 1rem; margin-top: 10px;">91 Students Connected</p>
+    </div>
+
+    <div id="welcome-overlay">
+        <div class="neural-decoration">
+            <!-- Animated neural network lines and nodes will be added via JavaScript -->
+        </div>
+        <div class="welcome-container">
+            <h1 class="welcome-title">Welcome to Mr. Nguyen's Math Class</h1>
+            <h2 class="welcome-subtitle">Neural Network Classroom</h2>
+            <p class="welcome-message">
+                You are now part of our interconnected learning network.<br>
+                Every connection strengthens our collective knowledge.
+            </p>
+            <div class="network-stats">
+                <div class="stat-item">
+                    <div class="stat-number">91</div>
+                    <div class="stat-label">Students</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">Classes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">∞</div>
+                    <div class="stat-label">Possibilities</div>
+                </div>
+            </div>
+            <button class="welcome-button" onclick="enterNetwork()">Enter the Network</button>
+        </div>
+    </div>
+
+    <div id="ui-toggle">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </div>
+
+    <div id="ui-container">
+        <div class="ui-header">Student Network Control</div>
+        <div class="ui-section">
+            <label class="ui-label">Network Density</label>
+            <input type="range" class="ui-slider" id="density-slider" min="0.01" max="0.15" step="0.005" value="0.035">
+        </div>
+        <div class="ui-section">
+            <label class="ui-label">Node Color</label>
+            <input type="color" class="ui-color-picker" id="node-color-picker" value="#00ffff">
+        </div>
+        <div class="ui-section">
+            <label class="ui-label">Theme Presets</label>
+            <div>
+                <button class="ui-button" data-theme="cyberpunk">Cyberpunk</button>
+                <button class="ui-button" data-theme="vaporwave">Vaporwave</button>
+                <button class="ui-button" data-theme="neptune">Neptune</button>
+            </div>
+        </div>
+        <div class="ui-section">
+            <label class="ui-label">
+                Show Names
+                <div class="ui-checkbox checked" id="names-toggle"></div>
+            </label>
+        </div>
+        <div class="ui-section">
+            <label class="ui-label">
+                Starfield
+                <div class="ui-checkbox checked" id="starfield-toggle"></div>
+            </label>
+        </div>
+        <button class="ui-button" id="recreate-button">REGENERATE NETWORK</button>
+    </div>
+
+    <div id="tooltip" class="tooltip"></div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        import { GlitchPass } from 'three/addons/postprocessing/GlitchPass.js';
+
+        // Student roster data
+        const STUDENTS = [
+            // Advanced Algebra Roster 2 (37 students)
+            "Brianna", "Gloria", "Channce", "Andy", "Dejonae", "Joshua", "Tiana", "Daniel", 
+            "Seniya", "Jonathan", "Muzic", "Jasper", "Kelia", "Jesus", "Ernesto", "Kalyn", 
+            "Za'Kiyah", "Elijah", "Braylon", "Elijah", "Keontae", "Janiyah", "Jasmine", 
+            "Akasha", "Makhia", "Joshua", "Madison", "Jordan", "Jeovanni", "Ayana", 
+            "Zayden", "Julian", "Ramiyah", "Kaden", "Jada", "Donovan", "Yul",
+            
+            // Advanced Algebra Roster 3 (35 students) - Note: List shows 33 but has 35 items
+            "Analia", "Cristian", "Tytia", "SIVANANDA", "Legend", "Zarkyes", "Jynese", 
+            "Kareem", "Kevin", "Emery", "Tristan", "Kevin", "Kimorah", "Jennah", "Miguel", 
+            "Madison", "Booker", "Demi", "A'lyse", "Dillary", "Giovanni", "Darrion", 
+            "James", "Rakiya", "Jakayla", "Jaleah", "Kenya", "Krystopher", "Amira", 
+            "Mya", "Ty'Nasia", "Taylor", "Malaya", "Adriana", "Jayla",
+            
+            // Calculus Roster (21 students)
+            "Edward", "JauQuez", "Alijah", "Jeremy", "Yanizet", "Vy", "Yaritzi", "Nini", 
+            "Christian", "Oluwatamilore", "Edward", "Zienda", "Eric", "Ibrihim", "Jada", 
+            "Gregory", "Anderson", "Joshua", "Nevaeh", "Titus", "Makiyah"
+        ];
+
+        // --- Core Setup ---
+        const loadingScreen = document.getElementById('loading-screen');
+        const welcomeOverlay = document.getElementById('welcome-overlay');
+        const uiContainer = document.getElementById('ui-container');
+        const uiToggle = document.getElementById('ui-toggle');
+        const tooltip = document.getElementById('tooltip');
+
+        let isUserInteracted = false;
+
+        // Global function for welcome button
+        window.enterNetwork = function() {
+            welcomeOverlay.classList.remove('show');
+            setTimeout(() => {
+                welcomeOverlay.style.display = 'none';
+                uiContainer.classList.add('active');
+                isUserInteracted = true;
+            }, 1000);
+        };
+
+        // Create animated neural decoration for welcome screen
+        function createWelcomeDecoration() {
+            const decoration = document.querySelector('.neural-decoration');
+            
+            // Create flowing lines
+            for (let i = 0; i < 8; i++) {
+                const line = document.createElement('div');
+                line.className = 'neural-line';
+                line.style.top = Math.random() * 100 + '%';
+                line.style.left = '-100px';
+                line.style.width = Math.random() * 300 + 200 + 'px';
+                line.style.animationDelay = Math.random() * 4 + 's';
+                line.style.animationDuration = (4 + Math.random() * 2) + 's';
+                decoration.appendChild(line);
+            }
+            
+            // Create floating nodes
+            for (let i = 0; i < 15; i++) {
+                const node = document.createElement('div');
+                node.className = 'neural-node';
+                node.style.left = Math.random() * 100 + '%';
+                node.style.top = Math.random() * 100 + '%';
+                node.style.animationDelay = Math.random() * 3 + 's';
+                node.style.animationDuration = (2 + Math.random() * 2) + 's';
+                decoration.appendChild(node);
+            }
+        }
+
+        const SCENE_SETTINGS = {
+            bloomStrength: 1.5,
+            nodeCount: STUDENTS.length,
+            nodeColor: '#00ffff',
+            starfield: true,
+            showNames: true,
+            starCount: 2500,
+            connectionDensity: 0.035,
+            pulseSpeed: 0.003,
+            twinkle: true,
+            theme: 'cyberpunk'
+        };
+
+        const THEMES = {
+            cyberpunk: {
+                background: 0x050510,
+                node: '#00ffff',
+                lines: '#00aaff',
+                stars: '#88ccff'
+            },
+            vaporwave: {
+                background: 0x1a0a29,
+                node: '#ff00ff',
+                lines: '#ff66ff',
+                stars: '#ffcc00'
+            },
+            neptune: {
+                background: 0x011a2d,
+                node: '#00ffcc',
+                lines: '#33ccff',
+                stars: '#e6f7ff'
+            }
+        };
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 60;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 20;
+        controls.maxDistance = 150;
+
+        let nodes = [];
+        let nodeLabels = [];
+        let stars, lines = [];
+        let selectedNode = null;
+        let dataPackets = [];
+
+        // --- Lighting ---
+        scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+        const pointLight = new THREE.PointLight(0xffffff, 1.5);
+        pointLight.position.set(40, 40, 40);
+        scene.add(pointLight);
+
+        // --- Post-processing (Bloom & Glitch) ---
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), SCENE_SETTINGS.bloomStrength, 1.5, 0.2);
+        composer.addPass(bloomPass);
+        const glitchPass = new GlitchPass();
+        glitchPass.enabled = false;
+        composer.addPass(glitchPass);
+        composer.addPass(new OutputPass());
+
+        // --- Network & Starfield Generation ---
+        const nodeGeom = new THREE.SphereGeometry(0.8, 16, 16);
+        const packetGeom = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+        
+        function generateStars() {
+            if (stars) scene.remove(stars);
+            const geo = new THREE.BufferGeometry();
+            const pos = [];
+            for (let i = 0; i < SCENE_SETTINGS.starCount; i++) {
+                pos.push(
+                    (Math.random() - 0.5) * 600,
+                    (Math.random() - 0.5) * 600,
+                    (Math.random() - 0.5) * 600
+                );
+            }
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+            const starMat = new THREE.PointsMaterial({
+                color: new THREE.Color(THEMES[SCENE_SETTINGS.theme].stars),
+                size: 1,
+                transparent: true,
+                opacity: 0.35,
+                depthWrite: false
+            });
+            stars = new THREE.Points(geo, starMat);
+            scene.add(stars);
+        }
+
+        function createStudentLabel(text, position) {
+            const label = document.createElement('div');
+            label.className = 'student-label';
+            label.textContent = text;
+            label.style.position = 'absolute';
+            label.style.pointerEvents = 'none';
+            document.body.appendChild(label);
+            return label;
+        }
+
+        function updateLabels() {
+            nodeLabels.forEach((label, index) => {
+                if (nodes[index]) {
+                    const vector = nodes[index].position.clone();
+                    vector.project(camera);
+                    
+                    const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                    const y = (vector.y * -0.5 + 0.5) * window.innerHeight;
+                    
+                    label.style.left = x + 'px';
+                    label.style.top = y + 'px';
+                    label.style.display = SCENE_SETTINGS.showNames ? 'block' : 'none';
+                    
+                    // Hide labels that are too far or behind camera
+                    const distance = camera.position.distanceTo(nodes[index].position);
+                    if (distance > 100 || vector.z > 1) {
+                        label.style.opacity = '0';
+                    } else {
+                        const opacity = Math.max(0.3, 1 - (distance - 30) / 70);
+                        label.style.opacity = opacity.toString();
+                    }
+                }
+            });
+        }
+
+        function generateNetwork() {
+            // Clean up previous network elements
+            nodes.forEach(n => scene.remove(n)); nodes = [];
+            lines.forEach(l => scene.remove(l)); lines = [];
+            dataPackets.forEach(p => scene.remove(p)); dataPackets = [];
+            nodeLabels.forEach(label => document.body.removeChild(label)); nodeLabels = [];
+
+            // Create new nodes with student names
+            const nodeMat = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(SCENE_SETTINGS.nodeColor),
+                emissive: new THREE.Color(SCENE_SETTINGS.nodeColor),
+                emissiveIntensity: 0.7,
+                metalness: 0.3,
+                roughness: 0.2
+            });
+
+            for (let i = 0; i < SCENE_SETTINGS.nodeCount; i++) {
+                const n = new THREE.Mesh(nodeGeom, nodeMat.clone());
+                n.position.set(
+                    (Math.random() - 0.5) * 80,
+                    (Math.random() - 0.5) * 80,
+                    (Math.random() - 0.5) * 80
+                );
+                n.userData = { 
+                    id: i, 
+                    studentName: STUDENTS[i] || `Student ${i + 1}`,
+                    isSelected: false 
+                };
+                scene.add(n);
+                nodes.push(n);
+
+                // Create label for each student
+                const label = createStudentLabel(n.userData.studentName, n.position);
+                nodeLabels.push(label);
+            }
+
+            // Create connections (lines) and data packets
+            nodes.forEach((a, i) => {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    if (Math.random() < SCENE_SETTINGS.connectionDensity) {
+                        const lineMat = new THREE.LineBasicMaterial({
+                            color: new THREE.Color(THEMES[SCENE_SETTINGS.theme].lines),
+                            transparent: true,
+                            opacity: 0.4
+                        });
+                        const line = new THREE.Line(
+                            new THREE.BufferGeometry().setFromPoints([a.position, nodes[j].position]),
+                            lineMat
+                        );
+                        line.userData.endpoints = [a, nodes[j]];
+                        scene.add(line);
+                        lines.push(line);
+
+                        // Data packet generation
+                        if (Math.random() > 0.85) {
+                            const packet = new THREE.Mesh(packetGeom, new THREE.MeshBasicMaterial({ 
+                                color: new THREE.Color(THEMES[SCENE_SETTINGS.theme].node), 
+                                transparent: true, 
+                                opacity: 0.8 
+                            }));
+                            packet.userData = { 
+                                line: line, 
+                                start: a.position.clone(), 
+                                end: nodes[j].position.clone(), 
+                                progress: Math.random() 
+                            };
+                            dataPackets.push(packet);
+                            scene.add(packet);
+                        }
+                    }
+                }
+            });
+
+            // Reset selected node
+            selectedNode = null;
+        }
+
+        function applyTheme(themeName) {
+            const theme = THEMES[themeName];
+            SCENE_SETTINGS.nodeColor = theme.node;
+            scene.background = new THREE.Color(theme.background);
+            
+            nodes.forEach(n => {
+                n.material.color.set(theme.node);
+                n.material.emissive.set(theme.node);
+            });
+            lines.forEach(l => l.material.color.set(theme.lines));
+            if (stars) stars.material.color.set(theme.stars);
+
+            // Update label colors
+            nodeLabels.forEach(label => {
+                label.style.color = theme.node;
+                label.style.textShadow = `0 0 5px ${theme.node}`;
+                label.style.borderColor = `${theme.node}33`;
+            });
+
+            // Add a glitch effect for a cool transition
+            glitchPass.enabled = true;
+            setTimeout(() => { glitchPass.enabled = false; }, 300);
+        }
+
+        // --- Interaction Handling ---
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+
+        function onPointerClick(event) {
+            if (!isUserInteracted) {
+                return; // Let the welcome screen handle first interaction
+            }
+
+            // Don't click through the UI
+            const uiRect = uiContainer.getBoundingClientRect();
+            if (event.clientX > uiRect.left && event.clientY < uiRect.bottom) {
+                return;
+            }
+
+            pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+            pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(pointer, camera);
+
+            const intersects = raycaster.intersectObjects(nodes);
+            
+            // Handle node selection
+            if (intersects.length > 0) {
+                const clickedNode = intersects[0].object;
+                
+                if (selectedNode && selectedNode !== clickedNode) {
+                    // Deselect previous node and its lines
+                    selectedNode.userData.isSelected = false;
+                    selectedNode.material.emissiveIntensity = 0.7;
+                    selectedNode.scale.setScalar(1);
+                    lines.forEach(l => {
+                        if (l.userData.endpoints.includes(selectedNode)) {
+                            l.material.opacity = 0.4;
+                            l.material.color.set(THEMES[SCENE_SETTINGS.theme].lines);
+                        }
+                    });
+                }
+                
+                // Toggle selection on the clicked node
+                clickedNode.userData.isSelected = !clickedNode.userData.isSelected;
+                selectedNode = clickedNode.userData.isSelected ? clickedNode : null;
+                
+                // Highlight the selected node and its lines
+                clickedNode.material.emissiveIntensity = clickedNode.userData.isSelected ? 1.5 : 0.7;
+                clickedNode.scale.setScalar(clickedNode.userData.isSelected ? 1.5 : 1);
+                lines.forEach(l => {
+                    if (l.userData.endpoints.includes(clickedNode)) {
+                        l.material.opacity = clickedNode.userData.isSelected ? 1.0 : 0.4;
+                        l.material.color.set(clickedNode.userData.isSelected ? new THREE.Color(THEMES[SCENE_SETTINGS.theme].node) : new THREE.Color(THEMES[SCENE_SETTINGS.theme].lines));
+                    }
+                });
+            } else if (selectedNode) {
+                // If a node is selected and the user clicks on empty space, deselect it.
+                selectedNode.userData.isSelected = false;
+                selectedNode.material.emissiveIntensity = 0.7;
+                selectedNode.scale.setScalar(1);
+                lines.forEach(l => {
+                    if (l.userData.endpoints.includes(selectedNode)) {
+                        l.material.opacity = 0.4;
+                        l.material.color.set(THEMES[SCENE_SETTINGS.theme].lines);
+                    }
+                });
+                selectedNode = null;
+            }
+        }
+
+        // --- UI & Event Listeners ---
+        function setupUI() {
+            uiToggle.addEventListener('click', () => {
+                uiContainer.classList.toggle('active');
+                uiToggle.classList.toggle('active');
+            });
+
+            document.getElementById('density-slider').addEventListener('input', (e) => {
+                SCENE_SETTINGS.connectionDensity = parseFloat(e.target.value);
+            });
+            
+            document.getElementById('node-color-picker').addEventListener('input', (e) => {
+                SCENE_SETTINGS.nodeColor = e.target.value;
+                nodes.forEach(n => {
+                    n.material.color.set(SCENE_SETTINGS.nodeColor);
+                    n.material.emissive.set(SCENE_SETTINGS.nodeColor);
+                });
+                // Update label colors
+                nodeLabels.forEach(label => {
+                    label.style.color = SCENE_SETTINGS.nodeColor;
+                    label.style.textShadow = `0 0 5px ${SCENE_SETTINGS.nodeColor}`;
+                });
+            });
+
+            document.getElementById('recreate-button').addEventListener('click', () => {
+                generateNetwork();
+            });
+
+            document.getElementById('names-toggle').addEventListener('click', (e) => {
+                e.target.classList.toggle('checked');
+                SCENE_SETTINGS.showNames = e.target.classList.contains('checked');
+            });
+
+            document.getElementById('starfield-toggle').addEventListener('click', (e) => {
+                e.target.classList.toggle('checked');
+                SCENE_SETTINGS.starfield = e.target.classList.contains('checked');
+                if (stars) stars.visible = SCENE_SETTINGS.starfield;
+            });
+
+            document.querySelectorAll('.ui-button[data-theme]').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    // Remove 'active' class from all buttons
+                    document.querySelectorAll('.ui-button[data-theme]').forEach(btn => btn.classList.remove('active'));
+                    // Add 'active' class to the clicked button
+                    e.target.classList.add('active');
+
+                    const theme = e.target.dataset.theme;
+                    SCENE_SETTINGS.theme = theme;
+                    applyTheme(theme);
+                });
+            });
+
+            // Set initial theme button to active
+            document.querySelector(`[data-theme="${SCENE_SETTINGS.theme}"]`).classList.add('active');
+        }
+        
+        function setupTooltips() {
+            renderer.domElement.addEventListener('mousemove', (event) => {
+                pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+                pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(pointer, camera);
+
+                const intersects = raycaster.intersectObjects(nodes);
+                if (intersects.length > 0) {
+                    const node = intersects[0].object;
+                    tooltip.style.opacity = 1;
+                    tooltip.innerHTML = `<strong>${node.userData.studentName}</strong><br>Node ID: ${node.userData.id + 1}`;
+                    tooltip.style.left = `${event.clientX}px`;
+                    tooltip.style.top = `${event.clientY}px`;
+                } else {
+                    tooltip.style.opacity = 0;
+                }
+            });
+        }
+
+        // --- Main Initialization ---
+        function init() {
+            scene.background = new THREE.Color(THEMES[SCENE_SETTINGS.theme].background);
+            generateStars();
+            generateNetwork();
+            setupUI();
+            setupTooltips();
+            createWelcomeDecoration();
+
+            // Initial UI state
+            document.getElementById('density-slider').value = SCENE_SETTINGS.connectionDensity;
+            document.getElementById('node-color-picker').value = SCENE_SETTINGS.nodeColor;
+            
+            window.addEventListener('resize', onWindowResize);
+            window.addEventListener('click', onPointerClick);
+            
+            // Show welcome screen after loading
+            loadingScreen.addEventListener('click', () => {
+                loadingScreen.style.display = 'none';
+                welcomeOverlay.style.display = 'flex';
+                setTimeout(() => {
+                    welcomeOverlay.classList.add('show');
+                }, 100);
+            }, { once: true });
+            
+            // Auto-transition from loading to welcome after 3 seconds
+            setTimeout(() => {
+                if (loadingScreen.style.display !== 'none') {
+                    loadingScreen.style.display = 'none';
+                    welcomeOverlay.style.display = 'flex';
+                    setTimeout(() => {
+                        welcomeOverlay.classList.add('show');
+                    }, 100);
+                }
+            }, 3000);
+        }
+
+        function onWindowResize() {
+            const w = window.innerWidth, h = window.innerHeight;
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            composer.setSize(w, h);
+        }
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            // Animate scene rotation
+            scene.rotation.y += 0.0008;
+
+            // Animate node pulsing (but not selected nodes)
+            const scale = 1 + 0.1 * Math.sin(Date.now() * SCENE_SETTINGS.pulseSpeed);
+            nodes.forEach(n => {
+                if (!n.userData.isSelected) {
+                    n.scale.setScalar(scale);
+                }
+            });
+            
+            // Animate starfield
+            if (SCENE_SETTINGS.starfield && stars) {
+                const twinkleValue = 0.35 + 0.1 * Math.sin(Date.now() * 0.0008);
+                stars.material.opacity = twinkleValue;
+                stars.rotation.y += 0.0001;
+                stars.rotation.x += 0.00005;
+            }
+
+            // Animate data packets
+            dataPackets.forEach(packet => {
+                packet.userData.progress += 0.005;
+                if (packet.userData.progress > 1) {
+                    packet.userData.progress = 0;
+                    const temp = packet.userData.start;
+                    packet.userData.start = packet.userData.end;
+                    packet.userData.end = temp;
+                }
+                const pos = new THREE.Vector3().lerpVectors(packet.userData.start, packet.userData.end, packet.userData.progress);
+                packet.position.copy(pos);
+            });
+
+            // Update student name labels
+            updateLabels();
+
+            composer.render();
+        }
+        
+        window.onload = function () {
+            init();
+            animate();
+        }
+    </script>
+</body>
+</html>
